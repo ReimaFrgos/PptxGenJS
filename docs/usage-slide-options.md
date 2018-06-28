@@ -11,6 +11,14 @@ Returns the page number/slide number for the given Slide.
 var slideNumber = slide.pageNumber();
 ```
 
+## Hide Slide
+Set a slides visibility to hidden. Is false by default. Set to true to hide hide the slide.
+
+### Hide Slide Syntax
+```javascript
+slide.hideSlide = true;
+```
+
 ## Slide Numbers
 
 ### Slide Number Syntax
