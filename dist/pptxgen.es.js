@@ -1,5 +1,5 @@
 /* PptxGenJS 3.3.0-beta @ 2020-06-30T01:53:27.349Z */
-//import * as JSZip from 'jszip';
+import * as JSZip from 'jszip';
 
 /**
  * PptxGenJS Enums
@@ -6687,4 +6687,4 @@ var PptxGenJS = /** @class */ (function () {
     return PptxGenJS;
 }());
 
-//export default PptxGenJS;
+export default PptxGenJS;
