@@ -1,5 +1,5 @@
 /* PptxGenJS 3.3.0-beta @ 2020-06-30T01:53:27.349Z */
-import * as JSZip from 'jszip';
+//import * as JSZip from 'jszip';
 
 /**
  * PptxGenJS Enums
@@ -3095,23 +3095,62 @@ function addChartDefinition(target, type, data, opt) {
     // B: Options: misc
     if (['bar', 'col'].indexOf(options.barDir || '') < 0)
         options.barDir = 'col';
-    // IMPORTANT: 'bestFit' will cause issues with PPT-Online in some cases, so defualt to 'ctr'!
-    if (['bestFit', 'b', 'ctr', 'inBase', 'inEnd', 'l', 'outEnd', 'r', 't'].indexOf(options.dataLabelPosition || '') < 0)
-        options.dataLabelPosition = options._type === CHART_TYPE.PIE || options._type === CHART_TYPE.DOUGHNUT ? 'bestFit' : 'ctr';
-    options.dataLabelBkgrdColors = options.dataLabelBkgrdColors === true || options.dataLabelBkgrdColors === false ? options.dataLabelBkgrdColors : false;
-    if (['b', 'l', 'r', 't', 'tr'].indexOf(options.legendPos || '') < 0)
-        options.legendPos = 'r';
+
     // barGrouping: "21.2.3.17 ST_Grouping (Grouping)"
-    if (['clustered', 'standard', 'stacked', 'percentStacked'].indexOf(options.barGrouping || '') < 0)
-        options.barGrouping = 'standard';
+    // Must be done before data label validation
+    if ([CHART_TYPE.AREA].indexOf(options._type || '') < 0) {
+        if (['stacked','standard', 'percentStacked'].indexOf(options.barGrouping || '') < 0)
+            options.barGrouping = 'standard';
+    }
+    if ([CHART_TYPE.BAR].indexOf(options._type || '') < 0) {
+        if (['clustered', 'stacked', 'percentStacked'].indexOf(options.barGrouping || '') < 0)
+            options.barGrouping = 'clustered';
+    }
+    if ([CHART_TYPE.BAR3D].indexOf(options._type || '') < 0) {
+        if (options.barDir === 'bar') {
+            if (['clustered', 'stacked', 'percentStacked'].indexOf(options.barGrouping || '') < 0)
+                options.barGrouping = 'clustered';
+        }
+        if (options.barDir === 'col') {
+            if (['clustered', 'stacked','standard', 'percentStacked'].indexOf(options.barGrouping || '') < 0)
+                options.barGrouping = 'clustered';            
+        }
+    }
     if (options.barGrouping.indexOf('tacked') > -1) {
-        options.dataLabelPosition = 'ctr'; // IMPORTANT: PPT-Online will not open Presentation when 'outEnd' etc is used on stacked!
         if (!options.barGapWidthPct)
             options.barGapWidthPct = 50;
     }
+
+    // Clean up and validate data label positions
+    // REFERENCE: https://docs.microsoft.com/en-us/openspecs/office_standards/ms-oi29500/e2b1697c-7adc-463d-9081-3daef72f656f?redirectedfrom=MSDN
+    if (options.dataLabelPosition) {
+        if ([CHART_TYPE.AREA,CHART_TYPE.BAR3D,CHART_TYPE.DOUGHNUT,CHART_TYPE.RADAR].indexOf(options._type || '') < 0)
+            delete options.dataLabelPosition 
+        if ([CHART_TYPE.PIE].indexOf(options._type || '') < 0) {
+            if (['bestFit', 'ctr', 'inEnd', 'outEnd'].indexOf(options.dataLabelPosition) < 0)
+                delete options.dataLabelPosition;
+        }
+        if ([CHART_TYPE.BUBBLE,CHART_TYPE.LINE,CHART_TYPE.SCATTER].indexOf(options._type || '') < 0) {
+            if (['b', 'ctr', 'l', 'r', 't'].indexOf(options.dataLabelPosition) < 0)
+                delete options.dataLabelPosition;
+        }
+        if ([CHART_TYPE.BAR].indexOf(options._type || '') < 0) {
+            if (['stacked', 'percentStacked'].indexOf(options.barGrouping || '') < 0) {
+                if (['ctr','inBase', 'inEnd'].indexOf(options.dataLabelPosition) < 0)
+                    delete options.dataLabelPosition;
+            }
+            if (['clustered'].indexOf(options.barGrouping || '') < 0) {
+                if (['ctr','inBase', 'inEnd','outEnd'].indexOf(options.dataLabelPosition) < 0)
+                delete options.dataLabelPosition;
+            }
+        }
+    }
+    options.dataLabelBkgrdColors = options.dataLabelBkgrdColors === true || options.dataLabelBkgrdColors === false ? options.dataLabelBkgrdColors : false;
+    if (['b', 'l', 'r', 't', 'tr'].indexOf(options.legendPos || '') < 0)
+        options.legendPos = 'r';
     // 3D bar: ST_Shape
     if (['cone', 'coneToMax', 'box', 'cylinder', 'pyramid', 'pyramidToMax'].indexOf(options.bar3DShape || '') < 0)
-        options.bar3DShape = 'box';
+        options.bar3DShape = 'box';     
     // lineDataSymbol: http://www.datypic.com/sc/ooxml/a-val-32.html
     // Spec has [plus,star,x] however neither PPT2013 nor PPT-Online support them
     if (['circle', 'dash', 'diamond', 'dot', 'none', 'square', 'triangle'].indexOf(options.lineDataSymbol || '') < 0)
@@ -4772,11 +4811,8 @@ function makeChartType(chartType, data, opts, valAxisId, catAxisId, isMultiTypeC
                     strXml += '        </a:defRPr>';
                     strXml += '      </a:pPr></a:p>';
                     strXml += '    </c:txPr>';
-                    // Setting dLblPos tag for bar3D seems to break the generated chart
-                    if (chartType !== CHART_TYPE.AREA && chartType !== CHART_TYPE.BAR3D) {
-                        if (opts.dataLabelPosition)
-                            strXml += ' <c:dLblPos val="' + opts.dataLabelPosition + '"/>';
-                    }
+                    if (opts.dataLabelPosition)
+                        strXml += ' <c:dLblPos val="' + opts.dataLabelPosition + '"/>';
                     strXml += '    <c:showLegendKey val="0"/>';
                     strXml += '    <c:showVal val="' + (opts.showValue ? '1' : '0') + '"/>';
                     strXml += '    <c:showCatName val="0"/>';
@@ -4905,11 +4941,8 @@ function makeChartType(chartType, data, opts, valAxisId, catAxisId, isMultiTypeC
                 strXml += '        </a:defRPr>';
                 strXml += '      </a:pPr></a:p>';
                 strXml += '    </c:txPr>';
-                // NOTE: Throwing an error while creating a multi type chart which contains area chart as the below line appears for the other chart type.
-                // Either the given change can be made or the below line can be removed to stop the slide containing multi type chart with area to crash.
-                if (opts._type !== CHART_TYPE.AREA && opts._type !== CHART_TYPE.RADAR && !isMultiTypeChart)
-                    if (opts.dataLabelPosition)
-                        strXml += ' <c:dLblPos val="' + opts.dataLabelPosition + '"/>';
+                if (opts.dataLabelPosition)
+                    strXml += ' <c:dLblPos val="' + opts.dataLabelPosition + '"/>';
                 strXml += '    <c:showLegendKey val="0"/>';
                 strXml += '    <c:showVal val="' + (opts.showValue ? '1' : '0') + '"/>';
                 strXml += '    <c:showCatName val="0"/>';
@@ -6654,4 +6687,4 @@ var PptxGenJS = /** @class */ (function () {
     return PptxGenJS;
 }());
 
-export default PptxGenJS;
+//export default PptxGenJS;
