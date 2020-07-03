@@ -1,5 +1,5 @@
 /* PptxGenJS 3.3.0-beta @ 2020-06-30T01:53:27.349Z */
-import * as JSZip from 'jszip';
+//import * as JSZip from 'jszip';
 
 /**
  * PptxGenJS Enums
@@ -3098,43 +3098,36 @@ function addChartDefinition(target, type, data, opt) {
 
     // barGrouping: "21.2.3.17 ST_Grouping (Grouping)"
     // Must be done before data label validation
-    if ([CHART_TYPE.AREA].indexOf(options._type || '') < 0) {
+    if (options._type === CHART_TYPE.AREA) {
         if (['stacked','standard', 'percentStacked'].indexOf(options.barGrouping || '') < 0)
             options.barGrouping = 'standard';
     }
-    if ([CHART_TYPE.BAR].indexOf(options._type || '') < 0) {
+    if (options._type === CHART_TYPE.BAR) {
         if (['clustered', 'stacked', 'percentStacked'].indexOf(options.barGrouping || '') < 0)
             options.barGrouping = 'clustered';
     }
-    if ([CHART_TYPE.BAR3D].indexOf(options._type || '') < 0) {
-        if (options.barDir === 'bar') {
-            if (['clustered', 'stacked', 'percentStacked'].indexOf(options.barGrouping || '') < 0)
-                options.barGrouping = 'clustered';
-        }
-        if (options.barDir === 'col') {
+    if (options._type === CHART_TYPE.BAR3D) {
             if (['clustered', 'stacked','standard', 'percentStacked'].indexOf(options.barGrouping || '') < 0)
-                options.barGrouping = 'clustered';            
-        }
+                options.barGrouping = 'standard';
     }
-    if (options.barGrouping.indexOf('tacked') > -1) {
+    if (options.barGrouping && options.barGrouping.indexOf('tacked') > -1) {
         if (!options.barGapWidthPct)
             options.barGapWidthPct = 50;
     }
-
     // Clean up and validate data label positions
     // REFERENCE: https://docs.microsoft.com/en-us/openspecs/office_standards/ms-oi29500/e2b1697c-7adc-463d-9081-3daef72f656f?redirectedfrom=MSDN
     if (options.dataLabelPosition) {
-        if ([CHART_TYPE.AREA,CHART_TYPE.BAR3D,CHART_TYPE.DOUGHNUT,CHART_TYPE.RADAR].indexOf(options._type || '') < 0)
+        if (options._type === CHART_TYPE.AREA || options._type === CHART_TYPE.BAR3D || options._type === CHART_TYPE.DOUGHNUT || options._type === CHART_TYPE.RADAR)
             delete options.dataLabelPosition 
-        if ([CHART_TYPE.PIE].indexOf(options._type || '') < 0) {
+        if (options._type === CHART_TYPE.PIE) {
             if (['bestFit', 'ctr', 'inEnd', 'outEnd'].indexOf(options.dataLabelPosition) < 0)
                 delete options.dataLabelPosition;
         }
-        if ([CHART_TYPE.BUBBLE,CHART_TYPE.LINE,CHART_TYPE.SCATTER].indexOf(options._type || '') < 0) {
+        if (options._type === CHART_TYPE.BUBBLE || options._type === CHART_TYPE.LINE || options._type === CHART_TYPE.SCATTER) {
             if (['b', 'ctr', 'l', 'r', 't'].indexOf(options.dataLabelPosition) < 0)
                 delete options.dataLabelPosition;
         }
-        if ([CHART_TYPE.BAR].indexOf(options._type || '') < 0) {
+        if (options._type === CHART_TYPE.BAR) {
             if (['stacked', 'percentStacked'].indexOf(options.barGrouping || '') < 0) {
                 if (['ctr','inBase', 'inEnd'].indexOf(options.dataLabelPosition) < 0)
                     delete options.dataLabelPosition;
@@ -3145,6 +3138,7 @@ function addChartDefinition(target, type, data, opt) {
             }
         }
     }
+
     options.dataLabelBkgrdColors = options.dataLabelBkgrdColors === true || options.dataLabelBkgrdColors === false ? options.dataLabelBkgrdColors : false;
     if (['b', 'l', 'r', 't', 'tr'].indexOf(options.legendPos || '') < 0)
         options.legendPos = 'r';
@@ -6687,4 +6681,4 @@ var PptxGenJS = /** @class */ (function () {
     return PptxGenJS;
 }());
 
-export default PptxGenJS;
+//export default PptxGenJS;
