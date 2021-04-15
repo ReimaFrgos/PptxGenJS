@@ -479,7 +479,7 @@ function slideObjectToXml(slide: ISlideLib | ISlideLayout): string {
 				// shape Type: LINE: line color
 				if (slideItemObj.options.line) {
 					strSlideXml += slideItemObj.options.line.width ? `<a:ln w="${valToPts(slideItemObj.options.line.width)}">` : '<a:ln>'
-					strSlideXml += genXmlColorSelection(slideItemObj.options.line.color)
+					strSlideXml += slideItemObj.options.line.type ? genXmlColorSelection(slideItemObj.options.line) : genXmlColorSelection(slideItemObj.options.line.color);
 					if (slideItemObj.options.line.dashType) strSlideXml += `<a:prstDash val="${slideItemObj.options.line.dashType}"/>`
 					if (slideItemObj.options.line.beginArrowType) strSlideXml += `<a:headEnd type="${slideItemObj.options.line.beginArrowType}"/>`
 					if (slideItemObj.options.line.endArrowType) strSlideXml += `<a:tailEnd type="${slideItemObj.options.line.endArrowType}"/>`

@@ -166,7 +166,7 @@ export interface ShapeFill {
 	 * Fill type
 	 * @deprecated 'solid'
 	 */
-	type?: 'none' | 'solid'
+	type?: 'none' | 'solid' | 'gradient'
 	/**
 	 * Fill color
 	 * - `HexColor` or `ThemeColor`
@@ -229,6 +229,101 @@ export interface ShapeLine extends ShapeFill {
 	 */
 	pt?: number
 }
+
+// used by shape, line, and background
+export interface ShapeGradient extends ShapeFill {
+	/**
+	 * Gradient Type
+	 * @default 'linear'
+	 * @since 3.3.0
+	 */
+	gradientType?: 'linear' | 'radial' | 'rect' | 'path'
+	/**
+	 * Linear Angle (degrees)
+	 * - range: 0-359.99
+	 * @default 45
+	 * @since 3.3.0
+	 */
+	linearAngle?: number
+	/**
+	 * Gradient Direction 
+	 * @default 'tlbr'
+	 * @since 3.3.0
+	 * (Top, Left, Bottom, Right, Center, From)
+	 */
+	gradientDirection?: 'tlbr' | 'trbl' | 'bltr' | 'brtl' | 'lr' | 'rl' | 'tb' | 'bt' | 'ftl' | 'ftr' | 'fbl' | 'fbr' | 'c'
+	/**
+	 * Add a line-break (boolean)
+	 * - range: 0-1
+	 * @default 1
+	 * @since 3.3.0
+	 */
+	rotateWithShape?: number
+	/**
+	 * From Left value for Path Gradient (percent)
+	 * - range: 0-100
+	 * - pathL + pathR = 100
+	 * @default 50
+	 * @since 3.3.0
+	 */
+	pathL?: number
+	/**
+	/**
+	 * From Right value for Path Gradient (percent)
+	 * - range: 0-100
+	 * - pathL + pathR = 100
+	 * @default 50
+	 */
+	pathR?: number
+	/**
+	/**
+	 * From Top value for Path Gradient (percent)
+	 * - range: 0-100
+	 * - pathT + pathB = 100
+	 * @default 50
+	 */
+	pathT?: number
+	/**
+	 * From Bottom value for Path Gradient (percent)
+	 * - range: 0-100
+	 * - pathT + pathB = 100
+	 * @default 50
+	 * @since 3.3.0
+	 */
+	pathB?: number
+	/**
+	 * Gradient Stop Points (array of multiple objects)
+	 */
+	gradStops?: Array<GradientStops>
+}
+
+// 2 to 10 stop points used by Gradient Fill
+export interface GradientStops {
+	/**
+	 * Location of stop point (percent)
+	 * - range: 0-100
+	 * - Unsupplied will increment by 10% for each stopPoint
+	 * @default 10
+	 * @since 3.3.0
+	 */
+	position?:number, 
+	/**
+	 * Brightness (+/- percent)
+	 * - range: -100 to +100
+	 * @default 0
+	 * @since 3.3.0
+	 */
+	brightness?:number,
+	/**
+	 * Transparency (percent)
+	 * - range: 0-100
+	 * @default 0
+	 * @since 3.3.0
+	 */
+	transparency?:number,
+	color?:Color
+}
+
 // used by: chart, slide, table, text
 export interface TextOptions {
 	/**

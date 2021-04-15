@@ -1,4 +1,4 @@
-/* PptxGenJS 3.3.0-beta @ 2020-07-16T04:50:27.414Z */
+/* PptxGenJS 3.3.0-beta @ 2020-07-27T13:01:59.251Z */
 'use strict';
 
 var JSZip = require('jszip');
@@ -779,8 +779,18 @@ function genXmlColorSelection(shapeFill, backColor) {
     var fillType = 'solid';
     var internalElements = '';
     var outText = '';
+    var shapeGradient = shapeFill;
+    var newGradientOpts = {};
+    var defaultGradStops = [
+        { color: SchemeColor["accent1"], position: 0, transparency: 0, brightness: 0 },
+        { color: SchemeColor["accent1"], position: 50, transparency: 0, brightness: 50 },
+        { color: SchemeColor["accent1"], position: 100, transparency: 0, brightness: 100 }
+    ];
     if (backColor && typeof backColor === 'string') {
         outText += "<p:bg><p:bgPr>" + genXmlColorSelection(backColor.replace('#', '')) + "<a:effectLst/></p:bgPr></p:bg>";
+    }
+    else if (backColor && typeof backColor === 'object') {
+        outText += "<p:bg><p:bgPr>" + genXmlColorSelection(backColor) + "\"<a:effectLst/></p:bgPr></p:bg>";
     }
     if (shapeFill) {
         if (typeof shapeFill === 'string')
@@ -794,15 +804,138 @@ function genXmlColorSelection(shapeFill, backColor) {
                 internalElements += "<a:alpha val=\"" + (100 - shapeFill.alpha) + "000\"/>"; // @deprecated v3.3.0
             if (shapeFill.transparency)
                 internalElements += "<a:alpha val=\"" + (100 - shapeFill.transparency) + "000\"/>";
+            if (fillType === 'gradient') {
+                newGradientOpts.gradientType = shapeGradient.gradientType || 'linear',
+                    newGradientOpts.rotateWithShape = shapeGradient.rotateWithShape || 1,
+                    newGradientOpts.linearAngle = null, // Supercedes gradientDirection for linear gradients if supplied
+                    newGradientOpts.gradientDirection = shapeGradient.gradientDirection || null,
+                    newGradientOpts.pathL = shapeGradient.pathL || 50,
+                    newGradientOpts.pathT = shapeGradient.pathT || 50,
+                    newGradientOpts.gradStops = shapeGradient.gradStops || defaultGradStops;
+                if (newGradientOpts.gradientType == 'linear') {
+                    if ((shapeGradient.linearAngle) && (shapeGradient.linearAngle >= 0) && (shapeGradient.linearAngle < 360)) {
+                        newGradientOpts.linearAngle = shapeGradient.linearAngle;
+                    }
+                    else if (newGradientOpts.gradientDirection === 'lr') {
+                        newGradientOpts.linearAngle = 0;
+                    }
+                    else if (newGradientOpts.gradientDirection === 'tlbr') {
+                        newGradientOpts.linearAngle = 45;
+                    }
+                    else if (newGradientOpts.gradientDirection === 'tb') {
+                        newGradientOpts.linearAngle = 90;
+                    }
+                    else if (newGradientOpts.gradientDirection === 'trbl') {
+                        newGradientOpts.linearAngle = 135;
+                    }
+                    else if (newGradientOpts.gradientDirection === 'rl') {
+                        newGradientOpts.linearAngle = 180;
+                    }
+                    else if (newGradientOpts.gradientDirection === 'brtl') {
+                        newGradientOpts.linearAngle = 225;
+                    }
+                    else if (newGradientOpts.gradientDirection === 'bt') {
+                        newGradientOpts.linearAngle = 270;
+                    }
+                    else if (newGradientOpts.gradientDirection === 'bltr') {
+                        newGradientOpts.linearAngle = 315;
+                    }
+                    else {
+                        // Fail Safe in case a Radial or Rectangular directional value was entered
+                        newGradientOpts.linearAngle = 45;
+                    }
+                }
+                else if ((newGradientOpts.gradientType === 'radial') || (newGradientOpts.gradientType === 'rect')) {
+                    if (!(newGradientOpts.gradientDirection === 'ftl') && !(newGradientOpts.gradientDirection === 'ftr') && !(newGradientOpts.gradientDirection === 'fbl') && !(newGradientOpts.gradientDirection === 'fbr') && !(newGradientOpts.gradientDirection === 'c')) {
+                        newGradientOpts.gradientDirection = 'ftl';
+                    }
+                }
+                else if (newGradientOpts.gradientType == 'path') {
+                    if ((newGradientOpts.pathL < 0) || (newGradientOpts.pathL > 100)) {
+                        newGradientOpts.pathL = 50;
+                    }
+                    newGradientOpts.pathR = 100 - newGradientOpts.pathL;
+                    if ((newGradientOpts.pathT < 0) || (newGradientOpts.pathT > 100)) {
+                        newGradientOpts.pathT = 50;
+                    }
+                    newGradientOpts.pathB = 100 - newGradientOpts.pathT;
+                }
+                if (newGradientOpts.gradStops.length < 2 && newGradientOpts.gradStops.length > 10) {
+                    newGradientOpts.gradStops = defaultGradStops;
+                }
+                newGradientOpts.gradStops.forEach(function (stopPoint, i) {
+                    stopPoint.position = ((stopPoint.position) && (Number(stopPoint.position) >= 0) && (Number(stopPoint.position) <= 100)) ? Number(stopPoint.position) : i * 10;
+                    stopPoint.brightness = ((stopPoint.brightness) && (Number(stopPoint.brightness) >= -100) && (Number(stopPoint.brightness) <= 100)) ? Number(stopPoint.brightness) : 0;
+                    stopPoint.transparency = ((stopPoint.transparency) && (Number(stopPoint.transparency) >= 0) && (Number(stopPoint.transparency) <= 100)) ? Number(stopPoint.transparency) : 0;
+                });
+            }
         }
         switch (fillType) {
             case 'solid':
                 outText += "<a:solidFill>" + createColorElement(colorVal, internalElements) + "</a:solidFill>";
                 break;
+            case 'gradient':
+                outText += "<a:gradFill flip=\"none\" rotWithShape=\"" + newGradientOpts.rotateWithShape + "\">";
+                outText += "<a:gsLst>";
+                newGradientOpts.gradStops.forEach(function (stopPoint) {
+                    var stopPointInternalElements = '';
+                    outText += "<a:gs pos=\"" + (stopPoint.position * 1000) + "\">";
+                    if (stopPoint.brightness < 0) {
+                        stopPointInternalElements += "<a:lumMod val=\"" + ((100 - stopPoint.brightness * -1) * 1000) + "\"/>";
+                    }
+                    else if (stopPoint.brightness > 0) {
+                        stopPointInternalElements += "<a:lumMod val=\" + " + ((100 - stopPoint.brightness) * 1000) + "\"/>";
+                        stopPointInternalElements += "<a:lumOff val=\" + " + (stopPoint.brightness * 1000) + "\"/>";
+                    }
+                    if (stopPoint.transparency > 0) {
+                        stopPointInternalElements += "<a:alpha val=\"" + ((100 - stopPoint.transparency) * 1000) + "\"/>";
+                    }
+                    outText += createColorElement(stopPoint.color, stopPointInternalElements);
+                    outText += "</a:gs>";
+                });
+                outText += "</a:gsLst>";
+                switch (newGradientOpts.gradientType) {
+                    case 'linear':
+                        outText += "<a:lin ang=\"" + (newGradientOpts.linearAngle * 60000) + "\" scaled=\"1\"/>";
+                        outText += "<a:tileRect/>";
+                        break;
+                    case 'radial':
+                    case 'rect':
+                        outText += "<a:path path=\"" + (newGradientOpts.gradientType == "radial" ? "circle" : "rect") + "\">";
+                        if (newGradientOpts.gradientDirection === 'ftl') {
+                            outText += '<a:fillToRect r="100000" b="100000"/></a:path><a:tileRect l="-100000" t="-100000"/>';
+                        }
+                        else if (newGradientOpts.gradientDirection === 'ftr') {
+                            outText += '<a:fillToRect l="100000" b="100000"/></a:path><a:tileRect t="-100000" r="-100000"/>';
+                        }
+                        else if (newGradientOpts.gradientDirection === 'fbl') {
+                            outText += '<a:fillToRect t="100000" r="100000"/></a:path><a:tileRect l="-100000" b="-100000"/>';
+                        }
+                        else if (newGradientOpts.gradientDirection === 'fbr') {
+                            outText += '<a:fillToRect l="100000" t="100000"/></a:path><a:tileRect r="-100000" b="-100000"/>';
+                        }
+                        else if (newGradientOpts.gradientDirection === 'c') {
+                            outText += '<a:fillToRect l="50000" t="50000" r="50000" b="50000"/></a:path><a:tileRect/>';
+                        }
+                        else {
+                            // Fail Safe in case a Radial or Rectangular directional value was entered
+                            outText += '<a:fillToRect l="50000" t="50000" r="50000" b="50000"/></a:path><a:tileRect/>';
+                        }
+                        break;
+                    case 'path':
+                        outText += "<a:path path=\"shape\">";
+                        outText += "<a:fillToRect l=\"" + (newGradientOpts.pathL * 1000) + "\" t=\"" + (newGradientOpts.pathT * 1000) + "\" r=\"" + (newGradientOpts.pathR * 1000) + "\" b=\"" + (newGradientOpts.pathB * 1000) + "\"/>";
+                        outText += "</a:path>";
+                        outText += "<a:tileRect/>";
+                        break;
+                }
+                outText += "</a:gradFill>";
+                break;
             default:
                 outText += ''; // @note need a statement as having only "break" is removed by rollup, then tiggers "no-default" js-linter
                 break;
         }
+        //}
     }
     return outText;
 }
@@ -1732,7 +1865,7 @@ function slideObjectToXml(slide) {
                 // shape Type: LINE: line color
                 if (slideItemObj.options.line) {
                     strSlideXml += slideItemObj.options.line.width ? "<a:ln w=\"" + valToPts(slideItemObj.options.line.width) + "\">" : '<a:ln>';
-                    strSlideXml += genXmlColorSelection(slideItemObj.options.line.color);
+                    strSlideXml += slideItemObj.options.line.type ? genXmlColorSelection(slideItemObj.options.line) : genXmlColorSelection(slideItemObj.options.line.color);
                     if (slideItemObj.options.line.dashType)
                         strSlideXml += "<a:prstDash val=\"" + slideItemObj.options.line.dashType + "\"/>";
                     if (slideItemObj.options.line.beginArrowType)
