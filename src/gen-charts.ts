@@ -11,6 +11,7 @@ import {
 	BARCHART_COLORS,
 	CHART_NAME,
 	CHART_TYPE,
+	CHARTEX_TYPE,
 	DEF_CHART_GRIDLINE,
 	DEF_FONT_COLOR,
 	DEF_FONT_SIZE,
@@ -406,7 +407,21 @@ export function createExcelWorksheet(chartObject: ISlideRelChart, zip: JSZip): P
 						'.xlsx"/>' +
 						'</Relationships>'
 				)
-				zip.file('ppt/charts/' + chartObject.fileName, makeXmlCharts(chartObject))
+				// MRTODO: Finish dating all file formats
+				if ((<any>Object).values(CHARTEX_TYPE).includes(chartObject.type)) {
+					// Newer Extended Charts which use 3 files
+					// zip.file('ppt/charts/' + chartObject.fileName, makeXmlCharts(chartObject))
+					// MRTODO: Replace these with proper filenames in the rels attribute
+					zip.file('ppt/charts/' + chartObject.fileName.replace('chart', 'chartEx'), makeXmlCharts(chartObject))
+					// MRTODO: Consider replacing this with a constant instead of a function unless find a reason it varies.
+					zip.file('ppt/charts/' + chartObject.fileName.replace('chart', 'colors'), makeXmlChartsExColors())
+					zip.file('ppt/charts/' + chartObject.fileName.replace('chart', 'style'), makeXmlCharts(chartObject))
+
+				} else {
+					// Classic Charts
+					zip.file('ppt/charts/' + chartObject.fileName, makeXmlCharts(chartObject))
+				}
+				
 
 				// 3: Done
 				resolve(null)
@@ -626,6 +641,53 @@ export function makeXmlCharts(rel: ISlideRelChart): string {
 	// LAST: chartSpace end
 	strXml += '</c:chartSpace>'
 
+	return strXml
+}
+
+/**
+ * Create XML sting for ChartEx colors#.xml
+ * @see: http://www.datypic.com/sc/ooxml/s-dml-chart.xsd.html
+ * @return {string} XML
+ */
+// MRTODO: Consider making this a constant if can't find a scenario where it changes.
+export function makeXmlChartsExColors(): string {
+	let strXml = '<cs:colorStyle xmlns:cs="http://schemas.microsoft.com/office/drawing/2012/chartStyle" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" meth="cycle" id="10">'
+    strXml += '	<a:schemeClr val="accent1"/>'
+    strXml += '	<a:schemeClr val="accent2"/>'
+    strXml += '	<a:schemeClr val="accent3"/>'
+    strXml += '	<a:schemeClr val="accent4"/>'
+    strXml += '	<a:schemeClr val="accent5"/>'
+    strXml += '	<a:schemeClr val="accent6"/>'
+    strXml += '	<cs:variation/>'
+    strXml += '	<cs:variation>'
+    strXml += '	    <a:lumMod val="60000"/>'
+    strXml += '	</cs:variation>'
+    strXml += '	<cs:variation>'
+    strXml += '	    <a:lumMod val="80000"/>'
+    strXml += '	    <a:lumOff val="20000"/>'
+    strXml += '	</cs:variation>'
+    strXml += '	<cs:variation>'
+    strXml += '	    <a:lumMod val="80000"/>'
+    strXml += '	</cs:variation>'
+    strXml += '	<cs:variation>'
+    strXml += '	    <a:lumMod val="60000"/>'
+    strXml += '	    <a:lumOff val="40000"/>'
+    strXml += '	</cs:variation>'
+    strXml += '	<cs:variation>'
+    strXml += '	    <a:lumMod val="50000"/>'
+    strXml += '	</cs:variation>'
+    strXml += '	<cs:variation>'
+    strXml += '	    <a:lumMod val="70000"/>'
+    strXml += '	    <a:lumOff val="30000"/>'
+    strXml += '	</cs:variation>'
+    strXml += '	<cs:variation>'
+    strXml += '	    <a:lumMod val="70000"/>'
+    strXml += '	</cs:variation>'
+    strXml += '	<cs:variation>'
+    strXml += '	    <a:lumMod val="50000"/>'
+    strXml += '	    <a:lumOff val="50000"/>'
+    strXml += '	</cs:variation>'
+	strXml += '</cs:colorStyle>'
 	return strXml
 }
 
@@ -1535,6 +1597,117 @@ function makeChartType(chartType: CHART_NAME, data: OptsChartData[], opts: IChar
 
 			// Done with Doughnut/Pie
 			break
+		
+	
+		default:
+			strXml += ''
+			break
+	}
+
+	return strXml
+}
+
+/**
+ * Create XML string for any given chart type
+ * @param {CHART_NAME} `chartType` chart type name
+ * @param {OptsChartData[]} `data` chart data
+ * @param {IChartOptsLib} `opts` chart options
+ * @param {string} `valAxisId`
+ * @param {string} `catAxisId`
+ * @param {boolean} `isMultiTypeChart`
+ * @example '<c:bubbleChart>'
+ * @example '<c:lineChart>'
+ * @return {string} XML
+ */
+function makeChartExType(chartType: CHART_NAME, data: OptsChartData[], opts: IChartOptsLib, valAxisId: string, catAxisId: string, isMultiTypeChart: boolean): string {
+	// NOTE: "Chart Range" (as shown in "select Chart Area dialog") is calculated.
+	// ....: Ensure each X/Y Axis/Col has same row height (esp. applicable to XY Scatter where X can often be larger than Y's)
+	let strXml: string = ''
+
+	switch (chartType) {
+		case CHARTEX_TYPE.WATERFALL:
+			// 1: Add Chart Data
+			strXml += '<cx:chartData>'
+			strXml += '	<cx:externalData r:id="rId1" cx:autoUpdate="0" />'
+			
+			// While Waterfall only allows 1 data set, it's possible more were provided and will be hidden
+			// They will be accessible if changing chart type after producing the pptx
+			data.forEach(function (obj, idx) {
+				strXml += '	<cx:data id="' + idx + '">'
+				
+				// 1.1: Add the Category labels
+				strXml += '	<cx:strDim type="cat">'
+				strXml += '		<cx:f>Sheet1!$A$2:$A$' + (obj.labels.length + 1) + '</cx:f>'
+				strXml += '		<cx:lvl ptCount="' + (obj.labels.length) + '">'
+				obj.labels.forEach(function (label, idx) {
+					strXml += '<cx:pt idx="' + idx + '">' + label + '</cx:pt>'
+				})
+				strXml += '		</cx:lvl>'
+				strXml += '	</cx:strDim>'
+
+				// 1.2: Add the values
+				strXml += '	<cx:numDim type="val">'
+				strXml += '		<cx:f>Sheet1!$' + getExcelColName(idx + 1) + '$2:$' + getExcelColName(idx + 1) + '$' + (obj.labels.length + 1) + '</cx:f>'
+				//MRTODO: Adapt to use format code config
+				strXml += '		<cx:lvl ptCount="' + (obj.labels.length) + '" formatCode="General">'
+				obj.values.forEach(function (value, idx) {
+					strXml += '<cx:pt idx="' + idx + '">' + value + '</cx:pt>'
+				})
+				strXml += '		</cx:lvl>'
+				strXml += '	</cx:numDim>'
+
+				// 1.3: close data
+				strXml += '	</cx:data>'
+
+				// 1.4: Loop for east set of values provided
+			})
+		
+			// 2: Add Chart
+			strXml += '<cx:chartData>'
+			// MRTODO: Replicate the Chart Title function
+			// MRTODO: Consider making a seperate gen-chartex.ts for extended charts
+			strXml += '	<cx:title pos="t" align="ctr" overlay="0" />'
+			// MRTODO: Consider making a whole seperate function for gen plot area
+			// 2.1: Add Plot Area
+			strXml += '	<cx:plotArea>'
+			strXml += '		<cx:plotAreaRegion>'
+			// 2.2: Add data Series
+			data.forEach(function (obj, idx) {
+				strXml += '			<cx:series layoutId="waterfall" ' + (idx > 0 ? ' hidden="1" ' : '') + 'uniqueId="{' + getUuid('xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx') + '}" formatIdx="' + idx + '">'
+				strXml += '				<cx:tx>'
+				strXml += '				<cx:txData>'
+				strXml += '					<cx:f>Sheet1!$' + getExcelColName(idx + 1) + '$1</cx:f>'
+				// MRTODO: Modify this to use the series name supplied instead of just Series# format. Keep Series# as falback if not supplied
+				strXml += '					<cx:v>Series' + idx + '</cx:v>'
+				strXml += '				</cx:txData>'
+				strXml += '				</cx:tx>'
+				// MRTODO: Custom Colors go in here <cx:dataPt idx="1" />
+				strXml += '				<cx:dataId val="' + idx + '" />'
+				strXml += '				<cx:layoutPr>'
+				strXml += '					<cx:subtotals />'
+				strXml += '				</cx:layoutPr>'
+				strXml += '			</cx:series>'
+			})
+			strXml += '		</cx:plotAreaRegion>'
+
+			// 3: Add Axis
+			// MRTODO: Make these use configurable value
+			// MRTODO: Make these use functions where applicable
+			strXml += '		<cx:axis id="0">'
+			strXml += '			<cx:catScaling gapWidth="0.5" />'
+			strXml += '			<cx:tickLabels />'
+			strXml += '		</cx:axis>'
+			strXml += '		<cx:axis id="1">'
+			strXml += '			<cx:valScaling />'
+			strXml += '			<cx:majorGridlines />'
+			strXml += '			<cx:tickLabels />'
+			strXml += '		</cx:axis>'
+			strXml += '		</cx:plotArea>'
+			strXml += '		<cx:legend pos="t" align="ctr" overlay="0" />'
+			strXml += '	</cx:chart>'
+			strXml += '</cx:chartSpace>'
+
+
 		default:
 			strXml += ''
 			break

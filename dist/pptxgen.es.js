@@ -1,5 +1,5 @@
 /* PptxGenJS 3.6.0-beta @ 2021-04-18T17:36:47.440Z */
-import JSZip from 'jszip';
+//import JSZip from 'jszip';
 
 /*! *****************************************************************************
 Copyright (c) Microsoft Corporation.
@@ -2624,6 +2624,8 @@ function makeXmlContTypes(slides, slideLayouts, masterSlide) {
         strXml += '<Override PartName="/ppt/slides/slide' + (idx + 1) + '.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>';
         // Add charts if any
         slide._relsChart.forEach(function (rel) {
+            console.log("FOREACH RELA");
+            console.log(rel);
             strXml += ' <Override PartName="' + rel.Target + '" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>';
         });
     });
@@ -2638,7 +2640,11 @@ function makeXmlContTypes(slides, slideLayouts, masterSlide) {
             '<Override PartName="/ppt/slideLayouts/slideLayout' +
                 (idx + 1) +
                 '.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/>';
+        console.log("RELS");
+        console.log(layout._relsChart );
         (layout._relsChart || []).forEach(function (rel) {
+            console.log("FOREACH REL");
+            console.log(rel);
             strXml += ' <Override PartName="' + rel.Target + '" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>';
         });
     });
@@ -4571,7 +4577,8 @@ function createExcelWorksheet(chartObject, zip) {
                 chartObject.globalId +
                 '.xlsx"/>' +
                 '</Relationships>');
-            zip.file('ppt/charts/' + chartObject.fileName, makeXmlCharts(chartObject));
+            console.log(chartObject);
+                zip.file('ppt/charts/' + chartObject.fileName, makeXmlCharts(chartObject));
             // 3: Done
             resolve(null);
         })
@@ -4793,6 +4800,7 @@ function makeXmlCharts(rel) {
 function makeChartType(chartType, data, opts, valAxisId, catAxisId, isMultiTypeChart) {
     // NOTE: "Chart Range" (as shown in "select Chart Area dialog") is calculated.
     // ....: Ensure each X/Y Axis/Col has same row height (esp. applicable to XY Scatter where X can often be larger than Y's)
+
     var strXml = '';
     switch (chartType) {
         case CHART_TYPE.AREA:
@@ -4829,6 +4837,8 @@ function makeChartType(chartType, data, opts, valAxisId, catAxisId, isMultiTypeC
                 ]
             */
             var colorIndex_1 = -1; // Maintain the color index by region
+            console.log("DATA");
+            console.log(data);
             data.forEach(function (obj) {
                 colorIndex_1++;
                 var idx = obj.index;
@@ -6837,4 +6847,4 @@ var PptxGenJS = /** @class */ (function () {
     return PptxGenJS;
 }());
 
-export default PptxGenJS;
+//export default PptxGenJS;

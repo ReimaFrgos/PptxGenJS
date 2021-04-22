@@ -37,7 +37,7 @@ export const AXIS_ID_SERIES_PRIMARY: string = '2094734556'
 
 export type JSZIP_OUTPUT_TYPE = 'arraybuffer' | 'base64' | 'binarystring' | 'blob' | 'nodebuffer' | 'uint8array'
 export type WRITE_OUTPUT_TYPE = JSZIP_OUTPUT_TYPE | 'STREAM'
-export type CHART_NAME = 'area' | 'bar' | 'bar3D' | 'bubble' | 'doughnut' | 'line' | 'pie' | 'radar' | 'scatter'
+export type CHART_NAME = 'area' | 'bar' | 'bar3D' | 'bubble' | 'doughnut' | 'line' | 'pie' | 'radar' | 'scatter' | 'waterfall'
 export type SCHEME_COLORS = 'tx1' | 'tx2' | 'bg1' | 'bg2' | 'accent1' | 'accent2' | 'accent3' | 'accent4' | 'accent5' | 'accent6'
 
 export const LETTERS: Array<string> = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
@@ -115,6 +115,11 @@ export enum ChartType {
 	'radar' = 'radar',
 	'scatter' = 'scatter',
 }
+export enum ChartExType {
+	'waterfall' = 'waterfall',
+}
+export const ChartExTypes: string[] = Object.values(ChartExType); 
+
 export enum ShapeType {
 	'accentBorderCallout1' = 'accentBorderCallout1',
 	'accentBorderCallout2' = 'accentBorderCallout2',
@@ -694,6 +699,9 @@ export enum CHART_TYPE {
 	'PIE' = 'pie',
 	'RADAR' = 'radar',
 	'SCATTER' = 'scatter',
+}
+export enum CHARTEX_TYPE {
+	'WATERFALL' = 'waterfall'
 }
 
 export enum SCHEME_COLOR_NAMES {
